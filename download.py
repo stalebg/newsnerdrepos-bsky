@@ -95,7 +95,7 @@ def get_repo_list(org: str, force: bool = False, wait: int = 1) -> list[dict]:
         return json.load(open(data_path, 'r'))
 
     # Login to GitHub
-    g = Github(os.getenv("GITHUB_API_TOKEN"))
+    g = Github(os.getenv("GH_API_TOKEN"))
 
     # Try to download an org
     print(f"Downloading {org}")
