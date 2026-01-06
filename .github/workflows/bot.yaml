@@ -33,7 +33,7 @@ jobs:
 
       - name: Download current repos
         env:
-          GITHUB_API_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          GH_API_TOKEN: ${{ secrets.GH_API_TOKEN }}
         run: |
           # Fetch repos directly from GitHub API for real-time updates
           # Runs ~12 minutes but ensures we catch new repos immediately
