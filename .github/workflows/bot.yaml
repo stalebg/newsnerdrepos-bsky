@@ -1,0 +1,69 @@
+name: Newsroom Repos Bot
+
+on:
+  schedule:
+    # Run daily at 12:00 UTC
+    - cron: '0 12 * * *'
+  workflow_dispatch:  # Allow manual triggering
+  push:
+    branches:
+      - main  # Run on push to main for testing
+
+jobs:
+  check-repos:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history to preserve repos.csv commits
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pipenv
+        run: pip install pipenv
+
+      - name: Install dependencies
+        run: pipenv install --deploy
+
+      - name: Download current repos
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+        run: |
+          # Fetch repos directly from GitHub API for real-time updates
+          # Runs ~12 minutes but ensures we catch new repos immediately
+          pipenv run python download.py --force --wait 2
+
+      - name: Detect new repositories
+        id: detect
+        continue-on-error: true
+        run: |
+          pipenv run python new_repos_detector.py
+
+      - name: Post to Bluesky
+        if: steps.detect.outcome == 'failure'  # new_repos_detector.py exits with 1 when new repos found
+        env:
+          BLUESKY_USERNAME: ${{ secrets.BLUESKY_USERNAME }}
+          BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
+        run: |
+          pipenv run python post_to_bluesky.py
+
+      - name: Update repository state
+        if: steps.detect.outcome == 'failure'  # Only commit if there were new repos
+        run: |
+          # Copy current repos to previous for next run
+          cp repos.csv repos_previous.csv
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Commit and push the updated files
+          git add repos.csv repos_previous.csv
+          git commit -m "Update repository snapshots [skip ci]" || echo "No changes to commit"
+          git push
