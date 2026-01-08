@@ -5,9 +5,7 @@ on:
     # Run daily at 12:00 UTC
     - cron: '0 12 * * *'
   workflow_dispatch:  # Allow manual triggering
-  push:
-    branches:
-      - main  # Run on push to main for testing
+  # NOTE: Removed push trigger to prevent race conditions and duplicate runs
 
 jobs:
   check-repos:
@@ -56,7 +54,7 @@ jobs:
           pipenv run python post_to_bluesky.py
 
       - name: Update repository state
-        if: steps.detect.outcome == 'failure'  # Only commit if there were new repos
+        # Always update state to keep CSVs in sync (prevents duplicate detections)
         run: |
           # Copy current repos to previous for next run
           cp repos.csv repos_previous.csv
@@ -67,5 +65,5 @@ jobs:
 
           # Commit and push the updated files
           git add repos.csv repos_previous.csv
-          git commit -m "Update repository snapshots [skip ci]" || echo "No changes to commit"
+          git diff --staged --quiet || git commit -m "Update repository snapshots [skip ci]"
           git push
