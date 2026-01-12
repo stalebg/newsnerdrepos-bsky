@@ -8,6 +8,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 import click
+import deepl
 import pandas as pd
 from atproto import Client
 from rich import print
@@ -17,6 +18,28 @@ THIS_DIR = Path(__file__).parent
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def translate_to_norwegian(text: str) -> str:
+    """
+    Translate text to Norwegian using DeepL API.
+    Falls back to original text if translation fails.
+    """
+    if not text or not text.strip():
+        return text
+
+    api_key = os.getenv("DEEPL_API_KEY")
+    if not api_key:
+        logger.warning("DEEPL_API_KEY not set, skipping translation")
+        return text
+
+    try:
+        translator = deepl.Translator(api_key)
+        result = translator.translate_text(text, target_lang="NB")  # Norwegian Bokmål
+        return result.text
+    except Exception as e:
+        logger.warning(f"Translation failed: {e}")
+        return text  # Return original on failure
 
 
 def authenticate_bluesky(username: str, password: str) -> Client:
@@ -79,21 +102,25 @@ def create_repo_post(repo: dict) -> dict:
     repo_url = f"https://github.com/{full_name}"
     description = repo.get('description', '')
 
-    # Construct the post text
+    # Translate description to Norwegian
     if pd.notna(description) and description:
-        text = f"{full_name} is a new repo by {org}: {repo_url}\n\n{description}"
+        description = translate_to_norwegian(description)
+
+    # Construct the post text (Norwegian)
+    if pd.notna(description) and description:
+        text = f"{org} har nettopp åpnet repoet {full_name}: {repo_url}\n\n{description}"
     else:
-        text = f"{full_name} is a new repo by {org}: {repo_url}"
+        text = f"{org} har nettopp åpnet repoet {full_name}: {repo_url}"
 
     # Truncate if too long (Bluesky has a 300 character limit)
     if len(text) > 300:
         # Calculate how much space we have for description
-        base_text = f"{full_name} is a new repo by {org}: {repo_url}\n\n"
+        base_text = f"{org} har nettopp åpnet repoet {full_name}: {repo_url}\n\n"
         remaining = 300 - len(base_text) - 3  # -3 for "..."
         if remaining > 0 and pd.notna(description):
             text = base_text + description[:remaining] + "..."
         else:
-            text = f"{full_name} is a new repo by {org}: {repo_url}"
+            text = f"{org} har nettopp åpnet repoet {full_name}: {repo_url}"
 
     # Encode the text to UTF-8 to properly calculate byte positions
     text_bytes = text.encode('utf-8')
