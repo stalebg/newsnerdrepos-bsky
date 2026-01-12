@@ -1,5 +1,5 @@
-# News Nerd Repos - Bluesky version
+# Reponytt
 
-A Bluesky version of the original twitter bot [@newsnerdrepos](https://twitter.com/newsnerdrepos) by [@kleinmatic](https://github.com/kleinmatic).
+En norsk variant av Bluesky-bot'en [@openjournalism](https://twitter.com/openjournalism), som igjen er en Bluesky-versjon av den originale Twitter bot'en [@newsnerdrepos](https://twitter.com/newsnerdrepos) fra [@kleinmatic](https://github.com/kleinmatic).
 
-The bot monitors repositories from journalism organizations listed in [silva-shih/open-journalism](https://github.com/silva-shih/open-journalism) and posts updates to Bluesky when new repos are discovered.
+Boten følger med på repoer fra nyhets redaksjoner (i litt utvidet forstand) som er listet opp i [silva-shih/open-journalism](https://github.com/silva-shih/open-journalism) og poster til Bluesky når nye, åpne, repoer dukker opp.
